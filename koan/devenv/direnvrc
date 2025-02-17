@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+## ^ for code highlighting
+
+# shellcheck shell=bash
+# adapted from https://github.com/cachix/devenv/blob/master/direnvrc
+
+_koan_devenv_preflight() {
+  local devenv_version
+
+  if [[ -z ${DEVENV_BIN:-} ]]; then
+    DEVENV_BIN=$(command -v devenv)
+    if [[ -z "${DEVENV_BIN}" ]]; then
+      log_error "command not found: devenv, see https://devenv.sh/getting-started/"
+      exit 1
+    fi
+  fi
+
+  # Strip the "devenv " and " \(..." from the version
+  devenv_version="$(devenv version)"
+  devenv_version="${devenv_version#devenv }"
+  devenv_version="${devenv_version% \(*}"
+  if [[ "$devenv_version" == "1.4.0" ]]; then
+    log_error "Devenv version 1.4.0 is blocked due to security issues with their Telemetry/Upload code"
+    exit 1
+  fi
+}
+
+use_koan_devenv() {
+  # This will error+fail if devenv is ver. 1.4
+  # We may revert it if/when https://github.com/cachix/devenv/issues/1733#issuecomment-2661242939 is addressed:
+  _koan_devenv_preflight
+
+  source_url "https://raw.githubusercontent.com/cachix/devenv/82c0147677e510b247d8b9165c54f73d32dfd899/direnvrc" "sha256-7u4iDd1nZpxL4tCzmPG0dQgC5V+/44Ba+tHkPob1v2k="
+  use devenv "${@}"
+}
